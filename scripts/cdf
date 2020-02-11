@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+## takes a file with a single column and creates a cdf file with two columns, ready for
+## gnuplot
+
+## get and validate the file
+
+FILE="$1"
+if [ ! -f "$FILE" ]; then
+	echo "USAGE: cdf <file>"
+	exit
+fi
+
+## get the number of rows
+ROWS=$(cat "$FILE" | wc -l)
+## and generate...
+cat "$FILE" | sort -n | awk -v count=$ROWS '{OFS=","; s+=$1; print NR/count, $1}'
