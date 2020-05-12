@@ -3,7 +3,7 @@ with import <nixpkgs> { };
 releaseTools.mvnBuild rec {
   name = "micro-benchmark";
 
-  src = ./.;
+  src = if lib.inNixShell then null else ./.;
   
   buildInputs = [
     openjdk8

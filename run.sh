@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 
-export DATA_DIR=./data/pscavenge-exp-18
+export DATA_DIR=./data/test-run/1
+
+export JAVA='../clean-GCPredictor-OpenJDK8/sources/openjdk8/build/linux-x86_64-normal-server-release/images/j2sdk-image/bin/java'
 
 run_build() {
     mvn clean package
@@ -8,6 +10,7 @@ run_build() {
 
 run_exp() {
     mkdir -p $DATA_DIR
+    export LD_LIBRARY_PATH="/home/rayandrew/Downloads/elephantTracks-2.0-beta-3/install/:$LD_LIBRARY_PATH"
     java \
       -Xloggc:$DATA_DIR/gc.log \
       -XX:+PrintGCDetails \
@@ -19,8 +22,89 @@ run_exp() {
       -XX:+PrintHeapAtGC \
       -XX:+PrintHeapAtGCExtended \
       -Xmx10M \
+      -cp ./target/micro-benchmark-1.0-SNAPSHOT.jar:/home/rayandrew/Downloads/elephantTracks-2.0-beta-3/asm-3.1.jar:/home/rayandrew/Downloads/elephantTracks-2.0-beta-3/install \
+      -agentlib:ElephantTracks \
+      ucare.microbenchmark.App "$@"
+}
+
+run_exp_noheap() {
+    mkdir -p $DATA_DIR
+    java \
+      -Xloggc:$DATA_DIR/gc.log \
+      -XX:+PrintGCDetails \
+      -XX:+PrintGCApplicationStoppedTime \
+      -XX:+PrintGCApplicationConcurrentTime \
+      -XX:+PrintGCDateStamps \
+      -XX:+UseParallelGC \
+      -XX:+UseParallelOldGC \
+      -XX:+ParallelGCVerbose \
+      -XX:+PrintParallelOldGCPhaseTimes \
+      -XX:+TraceParallelOldGCTasks \
+      -Xmx10M \
       -cp ./target/micro-benchmark-1.0-SNAPSHOT.jar \
-      ucare.microbenchmark.App
+      ucare.microbenchmark.App "$@"
+}
+
+run_exp_mod_noheap() {
+    mkdir -p $DATA_DIR
+    ${JAVA} \
+      -Xloggc:$DATA_DIR/gc.log \
+      -Xlogucare:$DATA_DIR/ucare.log \
+      -XX:+PrintGCDetails \
+      -XX:+ParallelGCVerbose \
+      -XX:+PrintGCApplicationStoppedTime \
+      -XX:+PrintGCApplicationConcurrentTime \
+      -XX:+PrintGCDateStamps \
+      -XX:+UseParallelGC \
+      -XX:+UseParallelOldGC \
+      -XX:StringTableSize=120026 \
+      -Xmx10M \
+      -cp ./target/micro-benchmark-1.0-SNAPSHOT.jar \
+      ucare.microbenchmark.App "$@"
+
+      # -XX:+ParallelGCVerbose \
+      # -XX:+PrintParallelOldGCPhaseTimes \
+      # -XX:+TraceParallelOldGCTasks \
+}
+
+run_exp_mod_new() {
+    mkdir -p $DATA_DIR
+    heap_size=$1
+    # echo $heap_size $@
+    ${JAVA} \
+      -Xloggc:$DATA_DIR/gc.log \
+      -Xlogucare:$DATA_DIR/ucare.log \
+      -XX:+PrintGCDetails \
+      -XX:+ParallelGCVerbose \
+      -XX:+PrintGCApplicationStoppedTime \
+      -XX:+PrintGCApplicationConcurrentTime \
+      -XX:+PrintGCDateStamps \
+      -XX:+UseParallelGC \
+      -XX:+UseParallelOldGC \
+      -Xmx"${heap_size}"M \
+      -cp ./target/micro-benchmark-1.0-SNAPSHOT.jar \
+      ucare.microbenchmark.App "$@"
+
+      # -XX:+ParallelGCVerbose \
+      # -XX:+PrintParallelOldGCPhaseTimes \
+      # -XX:+TraceParallelOldGCTasks \
+}
+
+run_exp_modified() {
+    mkdir -p $DATA_DIR
+    ${JAVA} \
+      -Xloggc:$DATA_DIR/gc.log \
+      -XX:+PrintGCDetails \
+      -XX:+PrintGCApplicationStoppedTime \
+      -XX:+PrintGCApplicationConcurrentTime \
+      -XX:+PrintGCDateStamps \
+      -XX:+UseParallelGC \
+      -XX:+UseParallelOldGC \
+      -XX:+PrintHeapAtGC \
+      -XX:+PrintHeapAtGCExtended \
+      -Xmx10M \
+      -cp ./target/micro-benchmark-1.0-SNAPSHOT.jar \
+      ucare.microbenchmark.App "$@"
 }
 
 run_exp_gc() {
@@ -32,7 +116,7 @@ run_exp_gc() {
       -XX:+UseG1GC \
       -Xmx10M \
       -cp ./target/micro-benchmark-1.0-SNAPSHOT.jar \
-      ucare.microbenchmark.App
+      ucare.microbenchmark.App "$@"
 }
 
 run_exp_agent() {
@@ -49,7 +133,7 @@ run_exp_agent() {
       -XX:+UseParallelOldGC \
       -Xmx10M \
       -cp ./target/micro-benchmark-1.0-SNAPSHOT.jar \
-      ucare.microbenchmark.App
+      ucare.microbenchmark.App "$@"
 }
 
 run_plot() {
@@ -69,8 +153,7 @@ if [ -z $1 ]
 then
   run_help
 else
-  for command in "$@"
-  do
-    run_${command}
-  done
+  command=$1
+  shift;
+  run_${command} "$@"
 fi
